@@ -1,0 +1,103 @@
+<div class="card stock">
+    <div class="c-top">
+        <div class="c-meta">
+            <span class="c-type stock">종목</span>
+            <span class="c-broker">{{ r.brokerage }}</span>
+            <span class="c-dot">·</span>
+            <span>{{ r.analyst }}</span>
+        </div>
+        {% if r.pdf_filename %}<a href="/pdf/{{ r.pdf_filename }}" target="_blank" class="pdf-link">PDF</a>{% endif %}
+    </div>
+
+    <!-- 종목명 + 투자의견 -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div>
+            <div class="c-stock">{{ r.stock_name or r.report_title }}{% if r.ticker %}<span class="c-ticker">{{ r.ticker }}</span>{% endif %}</div>
+            {% if r.report_title and r.report_title != r.stock_name %}<div class="c-title">{{ r.report_title }}</div>{% endif %}
+        </div>
+        {% if r.rating %}
+        <span class="rating-box {% if r.rating in ['Buy','Overweight','Outperform'] %}buy{% elif r.rating in ['Sell','Underweight'] %}sell{% else %}neutral{% endif %}">
+            {% if r.rating == 'Buy' %}매수{% elif r.rating == 'Overweight' %}비중확대{% elif r.rating == 'Outperform' %}아웃퍼폼{% elif r.rating == 'Neutral' %}중립{% elif r.rating == 'Hold' %}보유{% elif r.rating == 'Sell' %}매도{% elif r.rating == 'Underweight' %}비중축소{% else %}{{ r.rating }}{% endif %}
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- 의견 변경 -->
+    {% if r.has_rating_change %}
+    <div class="c-rating-row">
+        <div class="rating-change">
+            <span class="rc-prev">{{ r.prev_rating }}</span>
+            <span class="rc-arrow">→</span>
+            <span class="rc-new">{{ r.rating }}</span>
+        </div>
+        {% if r.has_tp_change %}
+        <span class="tp-change">TP {{ r.prev_target_price }} → <b>{{ r.target_price }}</b></span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- 가격 -->
+    {% if r.target_price or r.current_price %}
+    <div class="c-prices" style="margin:6px 0">
+        {% if r.target_price %}<span>🎯 목표가 <b>{{ r.target_price }}</b></span>{% endif %}
+        {% if r.current_price %}<span>현재가 {{ r.current_price }}</span>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- 헤드라인 -->
+    {% if r.headline %}<div class="c-headline">{{ r.headline }}</div>{% endif %}
+
+    <!-- 핵심 포인트 -->
+    {% if r.key_points_list %}
+    <div class="c-points">
+        {% for p in r.key_points_list[:5] %}
+        <div class="pt"><span class="pt-n">{{ loop.index }}</span><span class="pt-t">{{ p }}</span></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 리스크 -->
+    {% if r.risks %}<div class="c-risk"><span class="c-risk-label">⚠️</span><span class="c-risk-text">{{ r.risks }}</span></div>{% endif %}
+
+    <!-- 3개년 이익추정치 -->
+    {% if r.earnings and (r.earnings.get('2026E') or r.earnings.get('2027E') or r.earnings.get('2028E')) %}
+    <div class="c-earnings">
+        <table class="earn-tbl">
+            <tr class="earn-hdr">
+                <th></th>
+                {% for yr in ['2026E','2027E','2028E'] %}
+                {% if r.earnings.get(yr) %}<th>{{ yr }}</th>{% endif %}
+                {% endfor %}
+            </tr>
+            {% set fields = [('revenue','매출'),('op','영업이익'),('np','순이익'),('eps','EPS'),('per','PER')] %}
+            {% for key, label in fields %}
+            {% set has_data = [] %}
+            {% for yr in ['2026E','2027E','2028E'] %}
+                {% if r.earnings.get(yr, {}).get(key) %}{% if has_data.append(1) %}{% endif %}{% endif %}
+            {% endfor %}
+            {% if has_data %}
+            <tr>
+                <td class="earn-label">{{ label }}</td>
+                {% for yr in ['2026E','2027E','2028E'] %}
+                {% if r.earnings.get(yr) %}<td class="earn-val">{{ r.earnings.get(yr, {}).get(key, '-') or '-' }}</td>{% endif %}
+                {% endfor %}
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- 요약 -->
+    {% if r.summary %}<div class="c-summary">{{ r.summary }}</div>{% endif %}
+
+    <div class="c-foot">
+        <span>{{ r.sector }}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+            <span>{{ r.report_date }}</span>
+            <form action="/delete/{{ r.id }}" method="post" style="margin:0" onsubmit="return confirm('이 리포트를 삭제할까요?')">
+                <button type="submit" class="del-btn">✕</button>
+            </form>
+        </div>
+    </div>
+</div>

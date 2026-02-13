@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>컨콜 대시보드</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Noto Sans KR',sans-serif;background:#0a0e17;color:#e0e6f0;min-height:100vh}
+
+        /* 헤더 */
+        .header{background:#0d1220;border-bottom:1px solid #151d30;padding:14px 20px;
+            display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+            position:sticky;top:0;z-index:100}
+        .logo{font-size:18px;font-weight:900}
+        .nav-links a{color:#4a6a9a;text-decoration:none;font-size:12px;padding:4px 10px;
+            border:1px solid #1e2a42;border-radius:6px;transition:all .2s}
+        .nav-links a:hover{color:#fff;border-color:#3b82f6}
+        .nav-date{display:flex;align-items:center;gap:6px}
+        .nav-date a{color:#3a5a8a;text-decoration:none;font-size:13px;padding:4px 8px;
+            border:1px solid #1e2a42;border-radius:6px}
+        .nav-date a:hover{color:#fff;border-color:#3b82f6}
+        .nav-date input{background:#111827;border:1px solid #1e2a42;color:#e0e6f0;
+            padding:4px 10px;border-radius:6px;font-size:13px}
+        .badge{background:#1e2a42;color:#6b8fd4;font-size:11px;padding:2px 8px;border-radius:8px;margin-left:6px}
+        .today{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.2);color:#3b82f6;font-size:12px;
+            padding:4px 10px;text-decoration:none;border-radius:6px;border:1px solid rgba(59,130,246,.2)}
+        .del-all{background:none;border:1px solid rgba(239,68,68,.15);color:#4a3a3a;font-size:11px;
+            padding:4px 10px;border-radius:6px;cursor:pointer}
+        .del-all:hover{background:rgba(239,68,68,.15);color:#ef4444}
+
+        /* 그리드 */
+        .grid{display:grid;grid-template-columns:1fr;gap:16px;padding:20px;max-width:1100px;margin:0 auto}
+
+        /* 카드 */
+        .card{background:#111827;border:1px solid #1e2a42;border-radius:14px;padding:20px;
+            position:relative;border-left:3px solid #8b5cf6;display:flex;flex-direction:column}
+
+        .c-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+        .c-company{font-size:18px;font-weight:900;color:#fff}
+        .c-time{font-size:12px;color:#8b5cf6;font-weight:700;background:rgba(139,92,246,.08);
+            padding:3px 10px;border-radius:6px}
+
+        .c-meta{display:flex;gap:8px;align-items:center;font-size:12px;color:#5a6a8a;margin-bottom:10px}
+        .c-host{color:#8b5cf6;font-weight:700}
+        .c-sentiment{font-size:11px;padding:2px 8px;border-radius:5px;font-weight:700}
+        .c-sentiment.positive{background:rgba(34,197,94,.1);color:#22c55e}
+        .c-sentiment.negative{background:rgba(239,68,68,.1);color:#ef4444}
+        .c-sentiment.neutral{background:rgba(234,179,8,.1);color:#eab308}
+
+        .c-headline{font-size:14px;font-weight:800;color:#e0e6f0;line-height:1.5;margin:8px 0;
+            padding:10px 14px;border-left:2px solid #8b5cf6;background:rgba(139,92,246,.04);border-radius:0 8px 8px 0}
+
+        /* 2열 레이아웃 */
+        .c-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+        @media(max-width:768px){.c-body{grid-template-columns:1fr}}
+
+        .c-section{margin-bottom:8px}
+        .c-section-title{font-size:11px;font-weight:800;color:#5a7aaa;margin-bottom:6px;
+            text-transform:uppercase;letter-spacing:.5px}
+
+        .c-points{margin:0}
+        .pt{display:flex;gap:6px;margin-bottom:5px;font-size:12px;line-height:1.6}
+        .pt-n{min-width:16px;height:16px;border-radius:4px;background:rgba(139,92,246,.15);
+            color:#a78bfa;font-size:9px;font-weight:800;display:flex;align-items:center;
+            justify-content:center;margin-top:3px;flex-shrink:0}
+        .pt-t{color:#8899bb}
+
+        .c-guidance{font-size:12px;color:#8899bb;line-height:1.7;padding:8px 12px;
+            background:rgba(59,130,246,.03);border-radius:8px;border:1px solid rgba(59,130,246,.06)}
+
+        .qa-item{font-size:12px;color:#8899bb;line-height:1.6;margin-bottom:6px;padding-left:16px;position:relative}
+        .qa-item::before{content:"💬";position:absolute;left:0;font-size:10px}
+
+        .c-summary{font-size:11px;color:#5a6a8a;line-height:1.7;padding:8px 12px;
+            background:rgba(255,255,255,.015);border-radius:8px;margin-top:10px}
+
+        .c-foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;
+            padding-top:10px;border-top:1px solid #151d30;font-size:10px;color:#3a4a6a}
+        .c-foot a{color:#8b5cf6;text-decoration:none;font-size:10px;padding:2px 8px;
+            border:1px solid rgba(139,92,246,.2);border-radius:4px}
+        .del-btn{background:none;border:1px solid rgba(239,68,68,.15);color:#4a3a3a;font-size:11px;
+            width:20px;height:20px;border-radius:4px;cursor:pointer;display:flex;align-items:center;
+            justify-content:center;padding:0}
+        .del-btn:hover{background:rgba(239,68,68,.15);color:#ef4444}
+
+        .empty{text-align:center;padding:80px 20px;color:#3a4a6a}
+        .empty-icon{font-size:48px;margin-bottom:16px;opacity:.3}
+        .empty-text{font-size:14px;margin-bottom:8px}
+        .empty-sub{font-size:12px;color:#2a3a5a}
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div style="display:flex;align-items:center;gap:12px">
+        <span class="logo">🎙️ 컨콜 대시보드</span>
+        <span class="badge">{{ total }}건</span>
+    </div>
+    <div class="nav-links">
+        <a href="/dashboard">📊 리포트</a>
+        <a href="/compare">🔍 비교</a>
+        <a href="/stats">📈 통계</a>
+    </div>
+    <div class="nav-date">
+        {% if prev_exists %}<a href="?date={{ prev_date }}">← 전날</a>{% endif %}
+        <input type="date" value="{{ date }}" onchange="location.href='?date='+this.value">
+        {% if next_exists %}<a href="?date={{ next_date }}">다음 →</a>{% endif %}
+        <a href="?date={{ today }}" class="today">오늘</a>
+        {% if total > 0 %}
+        <form action="/concall-delete-all" method="post" style="margin:0"
+              onsubmit="return confirm('{{ date }} 컨콜 전체 삭제?')">
+            <input type="hidden" name="date" value="{{ date }}">
+            <button type="submit" class="del-all">전체삭제</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid">
+    {% if concalls %}
+    {% for c in concalls %}
+    <div class="card">
+        <div class="c-top">
+            <span class="c-company">{{ c.company_name }}</span>
+            {% if c.concall_time %}<span class="c-time">{{ c.concall_time }}</span>{% endif %}
+        </div>
+
+        <div class="c-meta">
+            {% if c.host %}<span class="c-host">{{ c.host }}</span><span>·</span>{% endif %}
+            {% if c.sentiment %}
+            <span class="c-sentiment {{ c.sentiment }}">
+                {% if c.sentiment == 'positive' %}긍정{% elif c.sentiment == 'negative' %}부정{% else %}중립{% endif %}
+            </span>
+            {% endif %}
+        </div>
+
+        {% if c.headline %}<div class="c-headline">{{ c.headline }}</div>{% endif %}
+
+        <div class="c-body">
+            <div>
+                {% if c.key_points_list %}
+                <div class="c-section">
+                    <div class="c-section-title">📋 핵심 포인트</div>
+                    <div class="c-points">
+                        {% for p in c.key_points_list[:8] %}
+                        <div class="pt"><span class="pt-n">{{ loop.index }}</span><span class="pt-t">{{ p }}</span></div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if c.summary %}
+                <div class="c-summary">{{ c.summary }}</div>
+                {% endif %}
+            </div>
+
+            <div>
+                {% if c.guidance %}
+                <div class="c-section">
+                    <div class="c-section-title">🎯 가이던스</div>
+                    <div class="c-guidance">{{ c.guidance }}</div>
+                </div>
+                {% endif %}
+
+                {% if c.qa_list %}
+                <div class="c-section" style="margin-top:12px">
+                    <div class="c-section-title">❓ Q&A 하이라이트</div>
+                    {% for q in c.qa_list[:5] %}
+                    <div class="qa-item">{{ q }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="c-foot">
+            <div style="display:flex;gap:10px;align-items:center">
+                <span>{{ c.concall_date }}</span>
+                {% if c.clova_url %}<a href="{{ c.clova_url }}" target="_blank">🔗 원본</a>{% endif %}
+            </div>
+            <form action="/concall-delete/{{ c.id }}" method="post" style="margin:0"
+                  onsubmit="return confirm('삭제할까요?')">
+                <button type="submit" class="del-btn">✕</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="empty">
+        <div class="empty-icon">🎙️</div>
+        <div class="empty-text">{{ date }} 컨콜이 없습니다</div>
+        <div class="empty-sub">텔레그램 봇에 클로바노트 URL을 보내면 자동 요약됩니다</div>
+    </div>
+    {% endif %}
+</div>
+
+</body>
+</html>

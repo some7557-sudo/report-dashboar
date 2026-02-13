@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>증권사별 비교</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Noto Sans KR',sans-serif;background:#0a0e17;color:#e0e6f0;min-height:100vh;padding:20px}
+        .container{max-width:1200px;margin:0 auto}
+        h1{font-size:22px;font-weight:900;text-align:center;margin-bottom:6px}
+        .sub{text-align:center;margin-bottom:24px}
+        .sub a{color:#3b82f6;text-decoration:none;font-size:13px}
+        .stocks{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:24px}
+        .stag{padding:6px 14px;background:#111827;border:1px solid #1e2a42;border-radius:12px;
+            font-size:12px;color:#8899bb;text-decoration:none;transition:all .2s}
+        .stag:hover{background:#1e2a42;color:#fff}
+        .stag.active{background:#2563eb;border-color:#2563eb;color:#fff}
+        .stag .n{opacity:.5;margin-left:4px;font-size:11px}
+
+        .compare-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:16px}
+        .ccard{background:#111827;border:1px solid #1e2a42;border-radius:12px;padding:18px;position:relative}
+        .ccard-broker{font-size:16px;font-weight:800;color:#3b82f6;margin-bottom:2px}
+        .ccard-analyst{font-size:12px;color:#5a6a8a;margin-bottom:10px}
+        .ccard-date{font-size:10px;color:#3a4a6a;position:absolute;top:18px;right:18px}
+
+        .ccard-rating{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+        .rbadge{font-size:13px;font-weight:800;padding:3px 10px;border-radius:5px}
+        .rbadge.buy{background:rgba(34,197,94,.12);color:#22c55e}
+        .rbadge.neutral{background:rgba(234,179,8,.12);color:#eab308}
+        .rbadge.sell{background:rgba(239,68,68,.12);color:#ef4444}
+        .ccard-tp{font-size:13px;color:#b0bcda}
+        .ccard-tp b{color:#fff}
+
+        .ccard-change{font-size:11px;color:#f59e0b;margin-bottom:8px;padding:4px 8px;
+            background:rgba(245,158,11,.06);border-radius:4px;display:inline-block}
+
+        .ccard-hl{font-size:13px;font-weight:700;color:#e0e6f0;line-height:1.5;margin:8px 0;
+            padding:8px 10px;border-left:2px solid #2563eb;background:rgba(37,99,235,.04);border-radius:0 6px 6px 0}
+        .ccard-points{margin:8px 0}
+        .cpt{font-size:12px;color:#8899bb;line-height:1.6;margin-bottom:3px;padding-left:12px;position:relative}
+        .cpt::before{content:"•";position:absolute;left:0;color:#3b82f6}
+
+        .ccard-risk{font-size:11px;color:#6b7a9a;margin-top:6px}
+        .ccard-risk span{color:#f59e0b}
+        .ccard-pdf{position:absolute;bottom:18px;right:18px}
+        .ccard-pdf a{font-size:10px;color:#3b82f6;text-decoration:none;padding:3px 8px;
+            border:1px solid rgba(59,130,246,.2);border-radius:4px}
+
+        .empty{text-align:center;padding:60px;color:#3a4a6a}
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔍 증권사별 투자의견 비교</h1>
+    <div class="sub"><a href="/dashboard">← 대시보드</a> · <a href="/stats">통계</a></div>
+
+    {% if stocks %}
+    <div class="stocks">
+        {% for s in stocks %}
+        <a href="?stock={{ s.stock_name }}" class="stag {% if selected==s.stock_name %}active{% endif %}">
+            {{ s.stock_name }}<span class="n">{{ s.cnt }}건 · {{ s.brokers }}사</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if selected and reports %}
+    <h2 style="font-size:18px;font-weight:900;margin-bottom:16px;text-align:center">{{ selected }}</h2>
+    <div class="compare-grid">
+        {% for r in reports %}
+        <div class="ccard">
+            <div class="ccard-broker">{{ r.brokerage }}</div>
+            <div class="ccard-analyst">{{ r.analyst }}</div>
+            <div class="ccard-date">{{ r.report_date }}</div>
+
+            <div class="ccard-rating">
+                {% if r.rating %}
+                <span class="rbadge {% if r.rating in ['Buy','Overweight','Outperform'] %}buy{% elif r.rating in ['Sell','Underweight'] %}sell{% else %}neutral{% endif %}">
+                    {{ r.rating }}
+                </span>
+                {% endif %}
+                {% if r.target_price %}
+                <span class="ccard-tp">TP <b>{{ r.target_price }}</b></span>
+                {% endif %}
+            </div>
+
+            {% if r.prev_rating %}
+            <div class="ccard-change">🔄 {{ r.prev_rating }} → {{ r.rating }}{% if r.prev_target_price %} | TP {{ r.prev_target_price }} → {{ r.target_price }}{% endif %}</div>
+            {% endif %}
+
+            {% if r.headline %}<div class="ccard-hl">{{ r.headline }}</div>{% endif %}
+
+            {% if r.key_points_list %}
+            <div class="ccard-points">
+                {% for p in r.key_points_list[:4] %}
+                <div class="cpt">{{ p }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if r.risks %}<div class="ccard-risk"><span>⚠️</span> {{ r.risks }}</div>{% endif %}
+
+            {% if r.earnings and (r.earnings.get('2026E') or r.earnings.get('2027E') or r.earnings.get('2028E')) %}
+            <div style="margin:8px 0;overflow:hidden">
+                <table style="width:100%;border-collapse:collapse;font-size:11px;background:rgba(37,99,235,.03);border-radius:8px;overflow:hidden">
+                    <tr style="background:rgba(37,99,235,.08)">
+                        <th style="padding:5px 8px;text-align:left;color:#6b8fd4;font-size:10px"></th>
+                        {% for yr in ['2026E','2027E','2028E'] %}
+                        {% if r.earnings.get(yr) %}<th style="padding:5px 8px;text-align:right;color:#6b8fd4;font-size:10px">{{ yr }}</th>{% endif %}
+                        {% endfor %}
+                    </tr>
+                    {% for key, label in [('revenue','매출'),('op','영업이익'),('np','순이익'),('eps','EPS'),('per','PER')] %}
+                    {% set ns = namespace(has=false) %}
+                    {% for yr in ['2026E','2027E','2028E'] %}{% if r.earnings.get(yr, {}).get(key) %}{% set ns.has = true %}{% endif %}{% endfor %}
+                    {% if ns.has %}
+                    <tr>
+                        <td style="padding:4px 8px;text-align:left;color:#5a7aaa;font-weight:600;font-size:10px">{{ label }}</td>
+                        {% for yr in ['2026E','2027E','2028E'] %}
+                        {% if r.earnings.get(yr) %}<td style="padding:4px 8px;text-align:right;color:#c8d8f0;font-size:11px">{{ r.earnings.get(yr, {}).get(key, '-') or '-' }}</td>{% endif %}
+                        {% endfor %}
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </table>
+            </div>
+            {% endif %}
+
+            {% if r.pdf_filename %}
+            <div class="ccard-pdf"><a href="/pdf/{{ r.pdf_filename }}" target="_blank">PDF</a></div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% elif selected %}
+    <div class="empty">{{ selected }} 리포트가 없습니다</div>
+    {% else %}
+    <div class="empty">위에서 종목을 선택하세요</div>
+    {% endif %}
+</div>
+</body>
+</html>

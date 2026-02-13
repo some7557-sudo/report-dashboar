@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>PDF 업로드</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Noto Sans KR',sans-serif;background:#0a0e17;color:#e0e6f0;min-height:100vh;
+            display:flex;flex-direction:column;align-items:center;padding:40px 20px}
+        h1{font-size:22px;font-weight:900;margin-bottom:8px}
+        .sub{color:#4a5a7a;font-size:13px;margin-bottom:24px}
+        .sub a{color:#3b82f6;text-decoration:none}
+        .drop{width:100%;max-width:600px;border:2px dashed #1e2a42;border-radius:16px;padding:60px 20px;
+            text-align:center;cursor:pointer;transition:all .2s;background:#0d1220}
+        .drop:hover,.drop.over{border-color:#2563eb;background:#0f1528}
+        .drop .icon{font-size:48px;margin-bottom:12px}
+        .drop p{color:#5a6a8a;font-size:14px}
+        .drop p b{color:#3b82f6}
+        input[type=file]{display:none}
+        .results{width:100%;max-width:600px;margin-top:20px}
+        .r-item{background:#111827;border:1px solid #1e2a42;border-radius:10px;padding:14px 16px;margin-bottom:8px;
+            display:flex;align-items:center;gap:12px}
+        .r-icon{font-size:20px;flex-shrink:0}
+        .r-info{flex:1;min-width:0}
+        .r-file{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .r-detail{font-size:11px;color:#4a5a7a;margin-top:2px}
+        .r-detail b{color:#22c55e}
+        .r-status{font-size:11px;padding:3px 8px;border-radius:4px;font-weight:700;flex-shrink:0}
+        .r-status.ok{background:rgba(34,197,94,.12);color:#22c55e}
+        .r-status.err{background:rgba(239,68,68,.12);color:#ef4444}
+        .r-status.loading{background:rgba(59,130,246,.12);color:#3b82f6}
+        .progress{width:100%;max-width:600px;margin-top:12px;text-align:center;color:#3b82f6;font-size:13px;display:none}
+        .back{margin-top:20px;color:#3b82f6;text-decoration:none;font-size:13px}
+    </style>
+</head>
+<body>
+    <h1>📤 PDF 리포트 업로드</h1>
+    <div class="sub"><a href="/dashboard">← 대시보드로 돌아가기</a></div>
+
+    <div class="drop" id="drop" onclick="document.getElementById('fileInput').click()">
+        <div class="icon">📄</div>
+        <p>PDF 파일을 드래그하거나 <b>클릭</b>해서 업로드</p>
+        <p style="margin-top:6px;font-size:12px;color:#3a4a6a">여러 파일 동시 업로드 가능</p>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf" multiple>
+
+    <div class="progress" id="progress">⚡ 분석 중... <span id="progCount"></span></div>
+    <div class="results" id="results"></div>
+    <a href="/dashboard" class="back">← 대시보드</a>
+
+<script>
+const drop=document.getElementById('drop'),fi=document.getElementById('fileInput'),
+      res=document.getElementById('results'),prog=document.getElementById('progress'),
+      progC=document.getElementById('progCount');
+
+['dragenter','dragover'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,ev=>{ev.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{if(e.dataTransfer.files.length)uploadFiles(e.dataTransfer.files)});
+fi.addEventListener('change',()=>{if(fi.files.length)uploadFiles(fi.files)});
+
+async function uploadFiles(files){
+    const pdfs=[...files].filter(f=>f.name.toLowerCase().endsWith('.pdf'));
+    if(!pdfs.length){alert('PDF 파일만 가능합니다');return}
+    res.innerHTML='';
+    prog.style.display='block';
+    let done=0;
+    for(const f of pdfs){
+        progC.textContent=`(${done+1}/${pdfs.length}) ${f.name}`;
+        const id='r_'+Math.random().toString(36).slice(2);
+        res.insertAdjacentHTML('beforeend',
+            `<div class="r-item" id="${id}"><span class="r-icon">📄</span><div class="r-info"><div class="r-file">${f.name}</div><div class="r-detail">분석 중...</div></div><span class="r-status loading">처리중</span></div>`);
+        try{
+            const fd=new FormData();fd.append('pdfs',f);
+            const resp=await fetch('/upload',{method:'POST',body:fd,headers:{Accept:'application/json'}});
+            const data=await resp.json();
+            const item=data[0]||{};
+            const el=document.getElementById(id);
+            if(item.status==='success'){
+                el.querySelector('.r-detail').innerHTML=`<b>${item.stock||''}</b> · ${item.brokerage||''}`;
+                el.querySelector('.r-status').className='r-status ok';
+                el.querySelector('.r-status').textContent='완료';
+            }else{
+                el.querySelector('.r-detail').textContent=item.msg||'오류';
+                el.querySelector('.r-status').className='r-status err';
+                el.querySelector('.r-status').textContent='실패';
+            }
+        }catch(e){
+            const el=document.getElementById(id);
+            el.querySelector('.r-detail').textContent=e.message;
+            el.querySelector('.r-status').className='r-status err';
+            el.querySelector('.r-status').textContent='실패';
+        }
+        done++;
+    }
+    prog.style.display='none';
+    progC.textContent='';
+}
+</script>
+</body>
+</html>

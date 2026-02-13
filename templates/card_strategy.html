@@ -1,0 +1,66 @@
+<div class="card strategy">
+    <div class="c-top">
+        <div class="c-meta">
+            <span class="c-type strategy">전략</span>
+            <span class="c-broker">{{ r.brokerage }}</span>
+            <span class="c-dot">·</span>
+            <span>{{ r.analyst }}</span>
+        </div>
+        {% if r.pdf_filename %}<a href="/pdf/{{ r.pdf_filename }}" target="_blank" class="pdf-link">PDF</a>{% endif %}
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div>
+            <div class="c-stock">{{ r.stock_name or r.report_title }}</div>
+            {% if r.report_title and r.report_title != r.stock_name %}<div class="c-title">{{ r.report_title }}</div>{% endif %}
+        </div>
+        {% if r.rating %}
+        <span class="rating-box {% if r.rating in ['Buy','Overweight','Outperform'] %}buy{% elif r.rating in ['Sell','Underweight'] %}sell{% else %}neutral{% endif %}">
+            {% if r.rating == 'Overweight' %}비중확대{% elif r.rating == 'Underweight' %}비중축소{% elif r.rating == 'Neutral' %}중립{% else %}{{ r.rating }}{% endif %}
+        </span>
+        {% endif %}
+    </div>
+
+    {% if r.has_rating_change %}
+    <div class="c-rating-row">
+        <div class="rating-change">
+            <span class="rc-prev">{{ r.prev_rating }}</span>
+            <span class="rc-arrow">→</span>
+            <span class="rc-new">{{ r.rating }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if r.headline %}<div class="c-headline">{{ r.headline }}</div>{% endif %}
+
+    <!-- 전략 리포트는 2컬럼 레이아웃 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:6px 0">
+        <!-- 좌: 핵심 포인트 -->
+        <div>
+            {% if r.key_points_list %}
+            <div class="c-points">
+                {% for p in r.key_points_list[:5] %}
+                <div class="pt"><span class="pt-n">{{ loop.index }}</span><span class="pt-t">{{ p }}</span></div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <!-- 우: 언급종목 + 리스크 -->
+        <div>
+            {% if r.mentioned_stocks %}<div class="c-stocks-box"><span class="c-stocks-label">📌 추천종목</span><span class="c-stocks-text">{{ r.mentioned_stocks }}</span></div>{% endif %}
+            {% if r.risks %}<div class="c-risk"><span class="c-risk-label">⚠️</span><span class="c-risk-text">{{ r.risks }}</span></div>{% endif %}
+        </div>
+    </div>
+
+    {% if r.summary %}<div class="c-summary">{{ r.summary }}</div>{% endif %}
+
+    <div class="c-foot">
+        <span>{{ r.sector }}</span>
+        <div style="display:flex;align-items:center;gap:10px">
+            <span>{{ r.report_date }}</span>
+            <form action="/delete/{{ r.id }}" method="post" style="margin:0" onsubmit="return confirm('이 리포트를 삭제할까요?')">
+                <button type="submit" class="del-btn">✕</button>
+            </form>
+        </div>
+    </div>
+</div>

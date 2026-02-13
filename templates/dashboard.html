@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>리포트 대시보드</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Noto Sans KR',sans-serif;background:#0a0e17;color:#e0e6f0;min-height:100vh}
+
+        /* ── 헤더 ──────────────── */
+        .header{text-align:center;padding:28px 20px 16px;border-bottom:1px solid #1a2035}
+        .header h1{font-size:24px;font-weight:900;color:#fff}
+        .header h1 .day{color:#3b82f6;font-weight:400;font-size:18px;margin-left:6px}
+        .header .stats{color:#4a5a7a;font-size:13px;margin-top:6px}
+        .header .stats b{color:#8899bb}
+
+        /* ── 네비게이션 ──────── */
+        .nav{display:flex;justify-content:center;align-items:center;gap:8px;margin:16px 0;flex-wrap:wrap}
+        .nav a,.nav button{background:#141a2a;border:1px solid #1e2a42;color:#8899bb;padding:7px 14px;border-radius:8px;
+            text-decoration:none;font-size:12px;cursor:pointer;transition:all .2s;font-family:inherit}
+        .nav a:hover{background:#1e2a42;color:#fff}
+        .nav .today{background:#2563eb;border-color:#2563eb;color:#fff}
+        .nav input[type=date]{background:#141a2a;border:1px solid #1e2a42;color:#c0ccee;padding:7px 10px;
+            border-radius:8px;font-family:inherit;font-size:12px}
+        .search-box{background:#141a2a;border:1px solid #1e2a42;color:#c0ccee;padding:7px 14px;border-radius:8px;
+            font-size:12px;width:220px;font-family:inherit}
+        .search-box::placeholder{color:#3a4a6a}
+        .search-box:focus{outline:none;border-color:#2563eb}
+
+        /* ── 필터 바 ──────────── */
+        .filters{display:flex;justify-content:center;gap:8px;margin:12px 0;flex-wrap:wrap}
+        .fbtn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:16px;font-size:12px;
+            font-weight:500;text-decoration:none;transition:all .2s;border:1px solid transparent}
+        .fbtn .n{background:rgba(255,255,255,.1);padding:1px 6px;border-radius:8px;font-size:11px}
+        .fbtn.cat-kr{background:rgba(34,197,94,.1);color:#22c55e;border-color:rgba(34,197,94,.2)}
+        .fbtn.cat-gl{background:rgba(59,130,246,.1);color:#3b82f6;border-color:rgba(59,130,246,.2)}
+        .fbtn.cat-etc{background:rgba(168,85,247,.1);color:#a855f7;border-color:rgba(168,85,247,.2)}
+        .fbtn.t-stock{background:rgba(34,197,94,.08);color:#4ade80;border-color:rgba(34,197,94,.15)}
+        .fbtn.t-industry{background:rgba(251,146,60,.08);color:#fb923c;border-color:rgba(251,146,60,.15)}
+        .fbtn.t-strategy{background:rgba(168,85,247,.08);color:#c084fc;border-color:rgba(168,85,247,.15)}
+        .fbtn.t-upgrade{background:rgba(239,68,68,.08);color:#f87171;border-color:rgba(239,68,68,.15)}
+        .fbtn:hover{filter:brightness(1.3)}
+        .fbtn.active{filter:brightness(1.5);box-shadow:0 0 10px rgba(255,255,255,.05)}
+
+        /* ── 종목 태그 ────────── */
+        .stock-tags{display:flex;justify-content:center;gap:6px;margin:10px 20px;flex-wrap:wrap}
+        .stag{padding:4px 12px;background:#141a2a;border:1px solid #1e2a42;border-radius:12px;
+            font-size:11px;color:#6b7a9a;text-decoration:none;transition:all .2s}
+        .stag:hover{background:#1e2a42;color:#fff}
+        .stag.active{background:#2563eb;border-color:#2563eb;color:#fff}
+        .stag .c{opacity:.6;margin-left:4px}
+
+        /* ── 컨테이너 ────────── */
+        .container{max-width:1400px;margin:0 auto;padding:0 20px 60px}
+
+        /* ── 섹션 헤더 ────────── */
+        .section{margin-top:28px}
+        .section-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+        .section-icon{font-size:18px}
+        .section-title{font-size:15px;font-weight:800;color:#fff}
+        .section-count{font-size:11px;color:#4a5a7a;background:#141a2a;padding:2px 8px;border-radius:8px}
+
+        /* ── 카드 그리드 ──────── */
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:14px}
+        .grid-wide{grid-template-columns:1fr}
+
+        /* ══════════════════════════════════════════
+           카드 공통
+           ══════════════════════════════════════════ */
+        .card{background:#111827;border:1px solid #1e2a42;border-radius:12px;padding:18px 20px;
+            transition:all .2s;display:flex;flex-direction:column;position:relative}
+        .card:hover{border-color:#2563eb;transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+
+        /* 상단 메타 */
+        .c-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+        .c-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:#5a6a8a}
+        .c-type{font-size:9px;font-weight:800;padding:2px 6px;border-radius:3px;letter-spacing:.5px;text-transform:uppercase}
+        .c-type.stock{background:rgba(34,197,94,.12);color:#22c55e}
+        .c-type.industry{background:rgba(251,146,60,.12);color:#fb923c}
+        .c-type.strategy{background:rgba(168,85,247,.12);color:#c084fc}
+        .c-broker{color:#3b82f6;font-weight:600}
+        .c-dot{color:#2a3a5a}
+        .pdf-link{font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;
+            background:rgba(59,130,246,.1);color:#3b82f6;text-decoration:none;border:1px solid rgba(59,130,246,.15)}
+        .pdf-link:hover{background:rgba(59,130,246,.2)}
+
+        /* 종목명/제목 */
+        .c-stock{font-size:17px;font-weight:900;color:#fff;line-height:1.3}
+        .c-ticker{font-size:11px;color:#3a4a6a;font-weight:400;margin-left:4px}
+        .c-title{font-size:12px;color:#6b7a9a;margin-top:2px;line-height:1.4}
+
+        /* 투자의견 */
+        .c-rating-row{display:flex;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap}
+        .rating-box{font-size:12px;font-weight:800;padding:3px 10px;border-radius:5px;white-space:nowrap}
+        .rating-box.buy{background:rgba(34,197,94,.12);color:#22c55e}
+        .rating-box.neutral{background:rgba(234,179,8,.12);color:#eab308}
+        .rating-box.sell{background:rgba(239,68,68,.12);color:#ef4444}
+        .c-prices{font-size:11px;color:#5a6a8a;display:flex;gap:10px}
+        .c-prices b{color:#b0bcda}
+
+        /* 의견 변경 */
+        .rating-change{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
+            padding:4px 12px;border-radius:6px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.12)}
+        .rc-prev{color:#6b7a9a;text-decoration:line-through}
+        .rc-arrow{color:#f59e0b;font-size:14px}
+        .rc-new{color:#22c55e}
+        .rc-new.down{color:#ef4444}
+        .tp-change{font-size:11px;color:#5a6a8a;margin-left:4px}
+        .tp-change b{color:#f59e0b}
+
+        /* 헤드라인 */
+        .c-headline{font-size:13px;font-weight:700;color:#e0e6f0;line-height:1.5;margin:8px 0;
+            padding:8px 12px;border-radius:6px;border-left:2px solid #2563eb}
+        .card.strategy .c-headline{border-left-color:#a855f7;background:rgba(168,85,247,.04)}
+        .card.industry .c-headline{border-left-color:#fb923c;background:rgba(251,146,60,.04)}
+        .card.stock .c-headline{background:rgba(37,99,235,.04)}
+
+        /* 핵심 포인트 */
+        .c-points{margin:6px 0 10px}
+        .pt{display:flex;align-items:flex-start;gap:8px;margin-bottom:5px}
+        .pt-n{flex-shrink:0;width:16px;height:16px;border-radius:50%;font-size:9px;font-weight:800;
+            display:flex;align-items:center;justify-content:center;margin-top:2px}
+        .card.stock .pt-n{background:rgba(59,130,246,.12);color:#3b82f6}
+        .card.industry .pt-n{background:rgba(251,146,60,.12);color:#fb923c}
+        .card.strategy .pt-n{background:rgba(168,85,247,.12);color:#c084fc}
+        .pt-t{font-size:12px;color:#a0aec0;line-height:1.5}
+
+        /* 언급종목 */
+        .c-stocks-box{font-size:11px;padding:7px 10px;background:rgba(34,197,94,.04);
+            border:1px solid rgba(34,197,94,.08);border-radius:6px;margin-bottom:6px;line-height:1.6}
+        .c-stocks-label{color:#22c55e;font-weight:700;margin-right:4px}
+        .c-stocks-text{color:#8899bb}
+
+        /* 리스크 */
+        .c-risk{font-size:11px;padding:5px 10px;background:rgba(239,68,68,.03);
+            border:1px solid rgba(239,68,68,.06);border-radius:6px;margin-bottom:6px;line-height:1.5}
+        .c-risk-label{color:#f59e0b;font-weight:700;margin-right:4px}
+        .c-risk-text{color:#6b7a9a}
+
+        /* 이익추정치 */
+        .c-earnings{margin:8px 0;padding:0;overflow:hidden}
+        .earn-tbl{width:100%;border-collapse:collapse;font-size:11px;background:rgba(37,99,235,.03);border-radius:8px;overflow:hidden}
+        .earn-hdr th{background:rgba(37,99,235,.08);color:#6b8fd4;font-weight:700;padding:5px 8px;
+            text-align:right;font-size:10px;letter-spacing:.5px}
+        .earn-hdr th:first-child{text-align:left}
+        .earn-tbl td{padding:4px 8px;border-top:1px solid rgba(37,99,235,.04);text-align:right;color:#a0b4d8}
+        .earn-label{text-align:left!important;color:#5a7aaa;font-weight:600;font-size:10px;white-space:nowrap}
+        .earn-val{font-variant-numeric:tabular-nums;font-size:11px;color:#c8d8f0;font-weight:500}
+        .earn-tbl tr:hover td{background:rgba(37,99,235,.04)}
+
+        /* 요약 */
+        .c-summary{font-size:11px;color:#5a6a8a;line-height:1.7;padding:6px 10px;
+            background:rgba(255,255,255,.015);border-radius:6px;margin-bottom:8px}
+
+        /* 푸터 */
+        .c-foot{display:flex;justify-content:space-between;margin-top:auto;padding-top:8px;
+            border-top:1px solid #151d30;font-size:10px;color:#3a4a6a}
+        .del-btn{background:none;border:1px solid rgba(239,68,68,.15);color:#4a3a3a;font-size:11px;
+            width:20px;height:20px;border-radius:4px;cursor:pointer;transition:all .2s;
+            display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit}
+        .del-btn:hover{background:rgba(239,68,68,.15);color:#ef4444;border-color:rgba(239,68,68,.3)}
+
+        /* ── 빈 상태 ──────────── */
+        .empty{text-align:center;padding:80px 20px;color:#3a4a6a}
+        .empty .icon{font-size:48px;margin-bottom:16px}
+        .empty a{color:#2563eb;text-decoration:none;font-weight:500}
+
+        /* ── FAB ──────────────── */
+        .fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;
+            background:#2563eb;color:#fff;border:none;font-size:26px;cursor:pointer;
+            box-shadow:0 4px 16px rgba(37,99,235,.4);transition:all .2s;z-index:100;
+            display:flex;align-items:center;justify-content:center;text-decoration:none}
+        .fab:hover{transform:scale(1.1);box-shadow:0 6px 24px rgba(37,99,235,.6)}
+
+        /* ── 반응형 ───────────── */
+        @media(max-width:768px){
+            .grid{grid-template-columns:1fr}
+            .search-box{width:160px}
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>{{ current_date.strftime('%m') }}월 {{ current_date.strftime('%d') }}일<span class="day">({{ weekday }})</span></h1>
+    <div class="stats">전체 <b>{{ total }}건</b> · 종목 <b>{{ type_counts.stock }}</b> · 산업 <b>{{ type_counts.industry }}</b> · 전략 <b>{{ type_counts.strategy }}</b>{% if upgrade_count %} · 의견변경 <b style="color:#f87171">{{ upgrade_count }}</b>{% endif %}
+    {% if total > 0 %}
+    <form action="/delete-all" method="post" style="display:inline;margin-left:12px" onsubmit="return confirm('{{ date_str }} 리포트 {{ total }}건을 모두 삭제할까요?')">
+        <input type="hidden" name="date" value="{{ date_str }}">
+        <button type="submit" style="background:none;border:1px solid rgba(239,68,68,.2);color:#6b4a4a;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;font-family:inherit">전체삭제</button>
+    </form>
+    {% endif %}
+    </div>
+</div>
+
+<!-- 날짜 + 검색 -->
+<div class="nav">
+    <a href="?date={{ prev_date }}">← 전날</a>
+    <input type="date" value="{{ date_str }}" onchange="location.href='?date='+this.value">
+    <a href="?date={{ next_date }}">다음날 →</a>
+    <a href="?date={{ today }}" class="today">오늘</a>
+    <a href="/compare" style="background:rgba(251,146,60,.1);border-color:rgba(251,146,60,.2);color:#fb923c">🔍 비교</a>
+    <a href="/stats" style="background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.2);color:#c084fc">📈 통계</a>
+    <a href="/concalls" style="background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.2);color:#a78bfa">🎙️ 컨콜</a>
+    <form action="/dashboard" method="get" style="display:inline">
+        <input type="hidden" name="date" value="{{ date_str }}">
+        <input type="text" name="search" class="search-box" placeholder="종목 · 애널리스트 · 증권사 검색" value="{{ search }}">
+    </form>
+</div>
+
+<!-- 필터 -->
+<div class="filters">
+    <a href="?date={{ date_str }}" class="fbtn cat-kr {% if not category and not rtype %}active{% endif %}">전체 <span class="n">{{ total }}</span></a>
+    <a href="?date={{ date_str }}&category=KR" class="fbtn cat-kr {% if category=='KR' %}active{% endif %}">🇰🇷 국내 <span class="n">{{ counts.KR }}</span></a>
+    <a href="?date={{ date_str }}&category=GL" class="fbtn cat-gl {% if category=='GL' %}active{% endif %}">🌍 글로벌 <span class="n">{{ counts.GL }}</span></a>
+    <span style="color:#1e2a42">|</span>
+    <a href="?date={{ date_str }}&type=stock" class="fbtn t-stock {% if rtype=='stock' %}active{% endif %}">종목 <span class="n">{{ type_counts.stock }}</span></a>
+    <a href="?date={{ date_str }}&type=industry" class="fbtn t-industry {% if rtype=='industry' %}active{% endif %}">산업 <span class="n">{{ type_counts.industry }}</span></a>
+    <a href="?date={{ date_str }}&type=strategy" class="fbtn t-strategy {% if rtype=='strategy' %}active{% endif %}">전략 <span class="n">{{ type_counts.strategy }}</span></a>
+    {% if upgrade_count %}
+    <span style="color:#1e2a42">|</span>
+    <a href="?date={{ date_str }}" class="fbtn t-upgrade" onclick="document.getElementById('sec-upgrade').scrollIntoView({behavior:'smooth'});return false">🔄 의견변경 <span class="n">{{ upgrade_count }}</span></a>
+    {% endif %}
+</div>
+
+<!-- 종목 태그 -->
+{% if stock_counts %}
+<div class="stock-tags">
+    {% for s in stock_counts %}
+    <a href="?date={{ date_str }}&stock={{ s.stock_name }}" class="stag {% if stock_filter==s.stock_name %}active{% endif %}">{{ s.stock_name }}<span class="c">{{ s.cnt }}</span></a>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="container">
+{% if total == 0 %}
+<div class="empty">
+    <div class="icon">📭</div>
+    <p>이 날짜에 리포트가 없습니다</p>
+    <a href="/upload">PDF 업로드하기 →</a>
+</div>
+{% else %}
+
+<!-- ① 투자의견 변경 -->
+{% if rating_changed and not rtype %}
+<div class="section" id="sec-upgrade">
+    <div class="section-head">
+        <span class="section-icon">🔄</span>
+        <span class="section-title" style="color:#f87171">투자의견 변경</span>
+        <span class="section-count">{{ rating_changed|length }}건</span>
+    </div>
+    <div class="grid">
+        {% for r in rating_changed %}
+        {% include "card_stock.html" %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ② 시장 전략 -->
+{% if strategy_reports %}
+<div class="section">
+    <div class="section-head">
+        <span class="section-icon">🌐</span>
+        <span class="section-title" style="color:#c084fc">시장 전략</span>
+        <span class="section-count">{{ strategy_reports|length }}건</span>
+    </div>
+    <div class="grid grid-wide">
+        {% for r in strategy_reports %}
+        {% include "card_strategy.html" %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ③ 산업 분석 -->
+{% if industry_reports %}
+<div class="section">
+    <div class="section-head">
+        <span class="section-icon">🏭</span>
+        <span class="section-title" style="color:#fb923c">산업 분석</span>
+        <span class="section-count">{{ industry_reports|length }}건</span>
+    </div>
+    <div class="grid grid-wide">
+        {% for r in industry_reports %}
+        {% include "card_industry.html" %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ④ 종목 리포트 -->
+{% if stock_reports %}
+<div class="section">
+    <div class="section-head">
+        <span class="section-icon">📊</span>
+        <span class="section-title">종목 리포트</span>
+        <span class="section-count">{{ stock_reports|length }}건</span>
+    </div>
+    <div class="grid">
+        {% for r in stock_reports %}
+        {% if not r.has_rating_change or rtype %}
+        {% include "card_stock.html" %}
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+</div>
+
+<a href="/upload" class="fab" title="PDF 업로드">+</a>
+</body>
+</html>
